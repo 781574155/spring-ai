@@ -466,7 +466,9 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			.usage(usage)
 			.model(result.model() != null ? result.model() : "")
 			.keyValue("created", result.created() != null ? result.created() : 0L)
-			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "");
+			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
+			// add for tanqi
+			.keyValue("response", result);
 		if (rateLimit != null) {
 			builder.rateLimit(rateLimit);
 		}
@@ -498,7 +500,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			.toList();
 
 		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.serviceTier(),
-				chunk.systemFingerprint(), "chat.completion", chunk.usage());
+				chunk.systemFingerprint(), "chat.completion", chunk.usage(), chunk.docReferences());
 	}
 
 	/**

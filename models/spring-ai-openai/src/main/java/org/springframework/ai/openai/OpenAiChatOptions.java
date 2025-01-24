@@ -37,6 +37,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioPa
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.openai.api.ResponseFormat;
+import org.springframework.ai.openai.tanqi.TanqiFile;
 import org.springframework.util.Assert;
 
 /**
@@ -211,6 +212,10 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 
 	@JsonIgnore
 	private Map<String, Object> toolContext;
+
+	// add for tanqi
+	private @JsonProperty("category") String category;
+	private @JsonProperty("tanqi_files") List<TanqiFile> tanqiFiles;
 
 	// @formatter:on
 
@@ -492,6 +497,22 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	@Override
 	public void setToolContext(Map<String, Object> toolContext) {
 		this.toolContext = toolContext;
+	}
+
+	public String getCategory() {
+		return category;
+	}
+
+	public void setCategory(String category) {
+		this.category = category;
+	}
+
+	public List<TanqiFile> getTanqiFiles() {
+		return tanqiFiles;
+	}
+
+	public void setTanqiFiles(List<TanqiFile> tanqiFiles) {
+		this.tanqiFiles = tanqiFiles;
 	}
 
 	@Override

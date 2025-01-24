@@ -28,6 +28,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.ai.openai.tanqi.DocReferences;
+import org.springframework.ai.openai.tanqi.TanqiFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -275,7 +277,7 @@ public class OpenAiApi {
 			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
 			.concatMapIterable(window -> {
 				Mono<ChatCompletionChunk> monoChunk = window.reduce(
-						new ChatCompletionChunk(null, null, null, null, null, null, null, null),
+						new ChatCompletionChunk(null, null, null, null, null, null, null, null, null),
 						(previous, current) -> this.chunkMerger.merge(previous, current));
 				return List.of(monoChunk);
 			})
@@ -817,7 +819,11 @@ public class OpenAiApi {
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
-			@JsonProperty("user") String user) {
+			@JsonProperty("user") String user,
+
+			// add for tanqi
+			@JsonProperty("category") String category,
+			@JsonProperty("tanqi_files") List<TanqiFile> tanqiFiles) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
@@ -829,7 +835,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null, null, null, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
-					null, null, null, null);
+					null, null, null, null, null, null);
 		}
 
 		/**
@@ -843,7 +849,7 @@ public class OpenAiApi {
 			this(messages, model, null, null, null, null, null, null,
 					null, null, null, List.of(OutputModality.AUDIO, OutputModality.TEXT), audio, null, null,
 					null, null, null, stream, null, null, null,
-					null, null, null, null);
+					null, null, null, null, null, null);
 		}
 
 		/**
@@ -858,7 +864,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, temperature, null,
-					null, null, null, null);
+					null, null, null, null, null, null);
 		}
 
 		/**
@@ -874,7 +880,7 @@ public class OpenAiApi {
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, false, null, 0.8, null,
-					tools, toolChoice, null, null);
+					tools, toolChoice, null, null, null, null);
 		}
 
 		/**
@@ -887,7 +893,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, null, null,
-					null, null, null, null);
+					null, null, null, null, null, null);
 		}
 
 		/**
@@ -900,7 +906,7 @@ public class OpenAiApi {
 			return new ChatCompletionRequest(this.messages, this.model, this.store, this.metadata, this.frequencyPenalty, this.logitBias, this.logprobs,
 			this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
 			this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
-			this.tools, this.toolChoice, this.parallelToolCalls, this.user);
+			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.category, this.tanqiFiles);
 		}
 
 		/**
@@ -1228,7 +1234,10 @@ public class OpenAiApi {
 			@JsonProperty("service_tier") String serviceTier,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
 			@JsonProperty("object") String object,
-			@JsonProperty("usage") Usage usage
+			@JsonProperty("usage") Usage usage,
+
+			// add for tanqi
+			@JsonProperty("doc_references") DocReferences docReferences
 	) { // @formatter:on
 
 		/**
@@ -1387,7 +1396,10 @@ public class OpenAiApi {
 			@JsonProperty("service_tier") String serviceTier,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
 			@JsonProperty("object") String object,
-			@JsonProperty("usage") Usage usage) { // @formatter:on
+			@JsonProperty("usage") Usage usage,
+
+			// add for tanqi
+			@JsonProperty("doc_references") DocReferences docReferences) { // @formatter:on
 
 		/**
 		 * Chat completion choice.

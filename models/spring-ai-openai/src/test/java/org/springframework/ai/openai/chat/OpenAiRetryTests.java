@@ -130,7 +130,7 @@ public class OpenAiRetryTests {
 		var choice = new ChatCompletion.Choice(ChatCompletionFinishReason.STOP, 0,
 				new ChatCompletionMessage("Response", Role.ASSISTANT), null);
 		ChatCompletion expectedChatCompletion = new ChatCompletion("id", List.of(choice), 666L, "model", null, null,
-				null, new OpenAiApi.Usage(10, 10, 10));
+				null, new OpenAiApi.Usage(10, 10, 10), null);
 
 		given(this.openAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class), any()))
 			.willThrow(new TransientAiException("Transient Error 1"))
@@ -159,7 +159,7 @@ public class OpenAiRetryTests {
 		var choice = new ChatCompletionChunk.ChunkChoice(ChatCompletionFinishReason.STOP, 0,
 				new ChatCompletionMessage("Response", Role.ASSISTANT), null);
 		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", List.of(choice), 666L, "model", null,
-				null, null, null);
+				null, null, null, null);
 
 		given(this.openAiApi.chatCompletionStream(isA(ChatCompletionRequest.class), any()))
 			.willThrow(new TransientAiException("Transient Error 1"))
