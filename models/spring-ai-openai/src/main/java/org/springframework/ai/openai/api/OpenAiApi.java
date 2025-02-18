@@ -1018,7 +1018,9 @@ public class OpenAiApi {
 			@JsonProperty("tool_calls")
 			@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
 			@JsonProperty("refusal") String refusal,
-			@JsonProperty("audio") AudioOutput audioOutput) { // @formatter:on
+			@JsonProperty("audio") AudioOutput audioOutput,
+			@JsonProperty("tool_messages") // add for tanqi
+			@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolMessage> toolMessages) { // @formatter:on
 
 		/**
 		 * Create a chat completion message with the given content and role. All other
@@ -1027,7 +1029,7 @@ public class OpenAiApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null, null, null);
+			this(content, role, null, null, null, null, null, null);
 
 		}
 
@@ -1203,6 +1205,15 @@ public class OpenAiApi {
 				@JsonProperty("data") String data,
 				@JsonProperty("expires_at") Long expiresAt,
 				@JsonProperty("transcript") String transcript
+		) { // @formatter:on
+		}
+
+		// add for tanqi
+		@JsonInclude(Include.NON_NULL)
+		public record ToolMessage(// @formatter:off
+				@JsonProperty("name") String name,
+				@JsonProperty("tool_call_id") String toolCallId,
+				@JsonProperty("content") String content
 		) { // @formatter:on
 		}
 	}

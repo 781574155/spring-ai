@@ -129,7 +129,22 @@ public class OpenAiStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput);
+
+		// add for tanqi
+		// @formatter:off
+		List<ChatCompletionMessage.ToolMessage> toolMessages = new ArrayList<>();
+		if (previous.toolMessages() == null && current.toolMessages() == null) {
+			toolMessages = null;
+		}
+		if (previous.toolMessages() != null) {
+			toolMessages.addAll(previous.toolMessages());
+		}
+		if (current.toolMessages() != null) {
+			toolMessages.addAll(current.toolMessages());
+		}
+		// @formatter:on
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput,
+				toolMessages);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {
