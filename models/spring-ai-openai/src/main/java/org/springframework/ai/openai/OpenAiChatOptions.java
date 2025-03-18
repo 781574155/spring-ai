@@ -217,6 +217,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	private @JsonProperty("category") String category;
 	private @JsonProperty("tanqi_files") List<TanqiFile> tanqiFiles;
 	private @JsonProperty("conversation_id") String conversationId;
+	private @JsonProperty("req_type") String reqType;
 
 	// @formatter:on
 
@@ -522,6 +523,14 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 
 	public void setConversationId(String conversationId) {
 		this.conversationId = conversationId;
+	}
+
+	public String getReqType() {
+		return reqType;
+	}
+
+	public void setReqType(String reqType) {
+		this.reqType = reqType;
 	}
 
 	@Override
