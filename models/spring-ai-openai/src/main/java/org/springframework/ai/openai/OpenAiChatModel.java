@@ -366,28 +366,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 					// final response. Hence, the following overlapping buffer is
 					// created to store both the current and the subsequent response
 					// to accumulate the usage from the subsequent response.
-				}))
-				.buffer(2, 1)
-				.map(bufferList -> {
-					ChatResponse firstResponse = bufferList.get(0);
-					if (request.streamOptions() != null && request.streamOptions().includeUsage()) {
-						if (bufferList.size() == 2) {
-							ChatResponse secondResponse = bufferList.get(1);
-							if (secondResponse != null && secondResponse.getMetadata() != null) {
-								// This is the usage from the final Chat response for a
-								// given Chat request.
-								Usage usage = secondResponse.getMetadata().getUsage();
-								if (!UsageUtils.isEmpty(usage)) {
-									// Store the usage from the final response to the
-									// penultimate response for accumulation.
-									return new ChatResponse(firstResponse.getResults(),
-											from(firstResponse.getMetadata(), usage));
-								}
-							}
-						}
-					}
-					return firstResponse;
-				});
+				}));
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
