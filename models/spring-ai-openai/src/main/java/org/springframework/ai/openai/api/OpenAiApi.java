@@ -1092,14 +1092,16 @@ public class OpenAiApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text,
 			@JsonProperty("image_url") ImageUrl imageUrl,
-			@JsonProperty("input_audio") InputAudio inputAudio) { // @formatter:on
+			@JsonProperty("input_audio") InputAudio inputAudio,
+			@JsonProperty("audio_url") AudioUrl audioUrl,
+			@JsonProperty("video_url") VideoUrl videoUrl) { // @formatter:on
 
 			/**
 			 * Shortcut constructor for a text content.
 			 * @param text The text content of the message.
 			 */
 			public MediaContent(String text) {
-				this("text", text, null, null);
+				this("text", text, null, null, null, null);
 			}
 
 			/**
@@ -1107,7 +1109,7 @@ public class OpenAiApi {
 			 * @param imageUrl The image content of the message.
 			 */
 			public MediaContent(ImageUrl imageUrl) {
-				this("image_url", null, imageUrl, null);
+				this("image_url", null, imageUrl, null, null, null);
 			}
 
 			/**
@@ -1115,7 +1117,7 @@ public class OpenAiApi {
 			 * @param inputAudio The audio content of the message.
 			 */
 			public MediaContent(InputAudio inputAudio) {
-				this("input_audio", null, null, inputAudio);
+				this("input_audio", null, null, inputAudio, null, null);
 			}
 
 			/**
@@ -1153,6 +1155,22 @@ public class OpenAiApi {
 
 			}
 
+			/// add by tanqi
+			public MediaContent(AudioUrl audioUrl) {
+				this("audio_url", null, null, null, audioUrl, null);
+			}
+
+			public MediaContent(VideoUrl videoUrl) {
+				this("video_url", null, null, null, null, videoUrl);
+			}
+
+			@JsonInclude(Include.NON_NULL)
+			public record AudioUrl(@JsonProperty("url") String url) {
+			}
+
+			@JsonInclude(Include.NON_NULL)
+			public record VideoUrl(@JsonProperty("url") String url) {
+			}
 		}
 
 		/**
