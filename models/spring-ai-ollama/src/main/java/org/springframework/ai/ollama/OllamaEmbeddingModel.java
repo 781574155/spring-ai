@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,19 @@ package org.springframework.ai.ollama;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -45,7 +46,6 @@ import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
-import org.springframework.ai.ollama.metadata.OllamaEmbeddingUsage;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -59,6 +59,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Jonghoon Park
  * @since 0.8.0
  */
 public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
@@ -96,20 +97,23 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public float[] embed(Document document) {
-		return embed(document.getContent());
+		return embed(document.getText());
 	}
 
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
 
-		OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest = ollamaEmbeddingRequest(request.getInstructions(),
-				request.getOptions());
+		// Before moving any further, build the final request EmbeddingRequest,
+		// merging runtime and default options.
+		EmbeddingRequest embeddingRequest = buildEmbeddingRequest(request);
+
+		OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest = ollamaEmbeddingRequest(embeddingRequest);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(request)
 			.provider(OllamaApi.PROVIDER_NAME)
-			.requestOptions(buildRequestOptions(ollamaEmbeddingRequest))
+			.requestOptions(embeddingRequest.getOptions())
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -126,7 +130,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 					.toList();
 
 				EmbeddingResponseMetadata embeddingResponseMetadata = new EmbeddingResponseMetadata(response.model(),
-						OllamaEmbeddingUsage.from(response));
+						getDefaultUsage(response));
 
 				EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, embeddingResponseMetadata);
 
@@ -136,31 +140,38 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 			});
 	}
 
+	private DefaultUsage getDefaultUsage(OllamaApi.EmbeddingsResponse response) {
+		return new DefaultUsage(Optional.ofNullable(response.promptEvalCount()).orElse(0), 0);
+	}
+
+	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		// Process runtime options
+		OllamaOptions runtimeOptions = null;
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					OllamaOptions.class);
+		}
+
+		// Define request options by merging runtime options and default options
+		OllamaOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
+				OllamaOptions.class);
+
+		// Validate request options
+		if (!StringUtils.hasText(requestOptions.getModel())) {
+			throw new IllegalArgumentException("model cannot be null or empty");
+		}
+
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
+	}
+
 	/**
 	 * Package access for testing.
 	 */
-	OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest(List<String> inputContent, EmbeddingOptions options) {
-
-		// runtime options
-		OllamaOptions runtimeOptions = null;
-		if (options != null && options instanceof OllamaOptions ollamaOptions) {
-			runtimeOptions = ollamaOptions;
-		}
-
-		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
-
-		// Override the model.
-		if (!StringUtils.hasText(mergedOptions.getModel())) {
-			throw new IllegalArgumentException("Model is not set!");
-		}
-		String model = mergedOptions.getModel();
-
-		return new OllamaApi.EmbeddingsRequest(model, inputContent, DurationParser.parse(mergedOptions.getKeepAlive()),
-				OllamaOptions.filterNonSupportedFields(mergedOptions.toMap()), mergedOptions.getTruncate());
-	}
-
-	private EmbeddingOptions buildRequestOptions(OllamaApi.EmbeddingsRequest request) {
-		return EmbeddingOptionsBuilder.builder().withModel(request.model()).build();
+	OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		OllamaOptions requestOptions = (OllamaOptions) embeddingRequest.getOptions();
+		return new OllamaApi.EmbeddingsRequest(requestOptions.getModel(), embeddingRequest.getInstructions(),
+				DurationParser.parse(requestOptions.getKeepAlive()),
+				OllamaOptions.filterNonSupportedFields(requestOptions.toMap()), requestOptions.getTruncate());
 	}
 
 	/**
@@ -183,7 +194,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	public static class DurationParser {
 
-		private static final Pattern PATTERN = Pattern.compile("(\\d+)(ms|s|m|h)");
+		private static final Pattern PATTERN = Pattern.compile("(-?\\d+)(ms|s|m|h)");
 
 		public static Duration parse(String input) {
 
@@ -243,43 +254,6 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		public Builder modelManagementOptions(ModelManagementOptions modelManagementOptions) {
-			this.modelManagementOptions = modelManagementOptions;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #ollamaApi(OllamaApi)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withOllamaApi(OllamaApi ollamaApi) {
-			this.ollamaApi = ollamaApi;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #defaultOptions(OllamaOptions)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withDefaultOptions(OllamaOptions defaultOptions) {
-			this.defaultOptions = defaultOptions;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #observationRegistry(ObservationRegistry)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
-			this.observationRegistry = observationRegistry;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #modelManagementOptions(ModelManagementOptions)}
-		 * instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModelManagementOptions(ModelManagementOptions modelManagementOptions) {
 			this.modelManagementOptions = modelManagementOptions;
 			return this;
 		}

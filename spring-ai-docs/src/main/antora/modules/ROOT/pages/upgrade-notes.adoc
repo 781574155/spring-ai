@@ -1,6 +1,486 @@
 [[upgrade-notes]]
-= Upgrading Notes
+= Upgrade Notes
 
+[[upgrading-to-1-0-0-snapshot]]
+== Upgrading to 1.0.0-SNAPSHOT
+
+=== Overview
+The 1.0.0-SNAPSHOT version includes significant changes to artifact IDs, package names, and module structure. This section provides guidance specific to using the SNAPSHOT version.
+
+=== Add Snapshot Repositories
+
+To use the 1.0.0-SNAPSHOT version, you need to add the snapshot repositories to your build file.
+For detailed instructions, refer to the xref:getting-started.adoc#snapshots-add-snapshot-repositories[Snapshots - Add Snapshot Repositories] section in the Getting Started guide.
+
+=== Update Dependency Management
+
+Update your Spring AI BOM version to `1.0.0-SNAPSHOT` in your build configuration.
+For detailed instructions on configuring dependency management, refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section in the Getting Started guide.
+
+=== Artifact ID, Package, and Module Changes
+The 1.0.0-SNAPSHOT includes changes to artifact IDs, package names, and module structure.
+
+For details, refer to:
+- xref:upgrade-notes.adoc#common-artifact-id-changes[Common Artifact ID Changes]
+- xref:upgrade-notes.adoc#common-package-changes[Common Package Changes]
+- xref:upgrade-notes.adoc#common-module-structure[Common Module Structure]
+
+[[automating-upgrading-using-ai]]
+=== Automating upgrading using AI
+
+You can automate the upgrade process to 1.0.0-SNAPSHOT using the Claude Code CLI tool with a provided prompt. The prompt will guide the AI to perform the following tasks:
+
+1. Update the Spring AI BOM version to 1.0.0-SNAPSHOT
+2. Ensure all required repositories exist in your build configuration
+3. Update Spring AI artifact IDs according to the new naming patterns
+
+To use this automation:
+
+1. Download the https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview[Claude Code CLI tool]
+2. Copy the prompt from the https://github.com/spring-projects/spring-ai/blob/main/src/prompts/update-to-snapshot.txt[update-to-snapshot.txt] file
+3. Paste the prompt into the Claude Code CLI
+4. The AI will analyze your project and make the necessary changes
+
+This approach can save time and reduce the chance of errors when upgrading multiple projects or complex codebases.
+
+[[upgrading-to-1-0-0-m7]]
+== Upgrading to 1.0.0-M7
+
+=== Overview of Changes
+Spring AI 1.0.0-M7 is the last milestone release before the RC1 and GA releases. It introduces several important changes to artifact IDs, package names, and module structure that will be maintained in the final release.
+
+=== Artifact ID, Package, and Module Changes
+The 1.0.0-M7 includes the same structural changes as 1.0.0-SNAPSHOT.
+
+For details, refer to:
+- xref:upgrade-notes.adoc#common-artifact-id-changes[Common Artifact ID Changes]
+- xref:upgrade-notes.adoc#common-package-changes[Common Package Changes]
+- xref:upgrade-notes.adoc#common-module-structure[Common Module Structure]
+
+=== MCP Java SDK Upgrade to 0.9.0
+
+Spring AI 1.0.0-M7 now uses MCP Java SDK version 0.9.0, which includes significant changes from previous versions. If you're using MCP in your applications, you'll need to update your code to accommodate these changes.
+
+Key changes include:
+
+==== Interface Renaming
+
+* `ClientMcpTransport` → `McpClientTransport`
+* `ServerMcpTransport` → `McpServerTransport`
+* `DefaultMcpSession` → `McpClientSession` or `McpServerSession`
+* All `*Registration` classes → `*Specification` classes
+
+==== Server Creation Changes
+
+* Use `McpServerTransportProvider` instead of `ServerMcpTransport`
+
+[source,java]
+----
+// Before
+ServerMcpTransport transport = new WebFluxSseServerTransport(objectMapper, "/mcp/message");
+var server = McpServer.sync(transport)
+    .serverInfo("my-server", "1.0.0")
+    .build();
+
+// After
+McpServerTransportProvider transportProvider = new WebFluxSseServerTransportProvider(objectMapper, "/mcp/message");
+var server = McpServer.sync(transportProvider)
+    .serverInfo("my-server", "1.0.0")
+    .build();
+----
+
+==== Handler Signature Changes
+
+All handlers now receive an `exchange` parameter as their first argument:
+
+[source,java]
+----
+// Before
+.tool(calculatorTool, args -> new CallToolResult("Result: " + calculate(args)))
+
+// After
+.tool(calculatorTool, (exchange, args) -> new CallToolResult("Result: " + calculate(args)))
+----
+
+==== Client Interaction via Exchange
+
+Methods previously available on the server are now accessed through the exchange object:
+
+[source,java]
+----
+// Before
+ClientCapabilities capabilities = server.getClientCapabilities();
+CreateMessageResult result = server.createMessage(new CreateMessageRequest(...));
+
+// After
+ClientCapabilities capabilities = exchange.getClientCapabilities();
+CreateMessageResult result = exchange.createMessage(new CreateMessageRequest(...));
+----
+
+==== Roots Change Handlers
+
+[source,java]
+----
+// Before
+.rootsChangeConsumers(List.of(
+    roots -> System.out.println("Roots changed: " + roots)
+))
+
+// After
+.rootsChangeHandlers(List.of(
+    (exchange, roots) -> System.out.println("Roots changed: " + roots)
+))
+----
+
+For a complete guide to migrating MCP code, refer to the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-docs/src/main/antora/modules/ROOT/pages/mcp-migration.adoc[MCP Migration Guide].
+
+=== Automating upgrading using AI
+
+You can automate the upgrade process to 1.0.0-M7 using the Claude Code CLI tool with a provided prompt:
+
+1. Download the https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview[Claude Code CLI tool]
+2. Copy the prompt from the https://github.com/spring-projects/spring-ai/blob/main/src/prompts/update-to-m7.txt[update-to-m7.txt] file
+3. Paste the prompt into the Claude Code CLI
+4. The AI will analyze your project and make the necessary changes
+
+NOTE: The automated upgrade prompt currently handles artifact ID changes, package relocations, and module structure changes, but does not yet include automatic changes for upgrading to MCP 0.9.0. If you're using MCP, you'll need to manually update your code following the guidance in the xref:upgrade-notes.adoc#mcp-java-sdk-upgrade-to-0-9-0[MCP Java SDK Upgrade] section.
+
+[[common-sections]]
+== Common Changes Across Versions
+
+[[common-artifact-id-changes]]
+=== Artifact ID Changes
+
+The naming pattern for Spring AI starter artifacts has changed.
+You'll need to update your dependencies according to the following patterns:
+
+* Model starters: `spring-ai-\{model\}-spring-boot-starter` → `spring-ai-starter-model-\{model\}`
+* Vector Store starters: `spring-ai-\{store\}-store-spring-boot-starter` → `spring-ai-starter-vector-store-\{store\}`
+* MCP starters: `spring-ai-mcp-\{type\}-spring-boot-starter` → `spring-ai-starter-mcp-\{type\}`
+
+==== Examples
+
+[tabs]
+======
+Maven::
++
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<!-- BEFORE -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+</dependency>
+
+<!-- AFTER -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy,indent=0,subs="verbatim,quotes"]
+----
+// BEFORE
+implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
+
+// AFTER
+implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+implementation 'org.springframework.ai:spring-ai-starter-vector-store-redis'
+----
+======
+
+==== Changes to Spring AI Autoconfiguration Artifacts
+
+The Spring AI autoconfiguration has changed from a single monolithic artifact to individual autoconfiguration artifacts per model, vector store, and other components.
+This change was made to minimize the impact of different versions of dependent libraries conflicting, such as Google Protocol Buffers, Google RPC, and others.
+By separating autoconfiguration into component-specific artifacts, you can avoid pulling in unnecessary dependencies and reduce the risk of version conflicts in your application.
+
+The original monolithic artifact is no longer available:
+
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<!-- NO LONGER AVAILABLE -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+    <version>${project.version}</version>
+</dependency>
+----
+
+Instead, each component now has its own autoconfiguration artifact following these patterns:
+
+* Model autoconfiguration: `spring-ai-autoconfigure-model-\{model\}`
+* Vector Store autoconfiguration: `spring-ai-autoconfigure-vector-store-\{store\}`
+* MCP autoconfiguration: `spring-ai-autoconfigure-mcp-\{type\}`
+
+==== Examples of New Autoconfiguration Artifacts
+
+[tabs]
+======
+Models::
++
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-model-openai</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-model-anthropic</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-model-vertex-ai</artifactId>
+</dependency>
+----
+
+Vector Stores::
++
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-vector-store-redis</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-vector-store-pgvector</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-vector-store-chroma</artifactId>
+</dependency>
+----
+
+MCP::
++
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-mcp-client</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-mcp-server</artifactId>
+</dependency>
+----
+======
+
+NOTE: In most cases, you won't need to explicitly add these autoconfiguration dependencies.
+They are included transitively when using the corresponding starter dependencies.
+
+[[common-package-changes]]
+=== Package Name Changes
+
+Your IDE should assist with refactoring to the new package locations.
+
+* `KeywordMetadataEnricher` and `SummaryMetadataEnricher` have moved from `org.springframework.ai.transformer` to `org.springframework.ai.chat.transformer`.
+* `Content`, `MediaContent`, and `Media` have moved from `org.springframework.ai.model` to `org.springframework.ai.content`.
+
+[[common-module-structure]]
+=== Module Structure
+
+The project has undergone significant changes to its module and artifact structure. Previously, `spring-ai-core` contained all central interfaces, but this has now been split into specialized domain modules to reduce unnecessary dependencies in your applications.
+
+image::spring-ai-dependencies.png[Spring AI Dependencies, width=1000, align="center"]
+
+==== spring-ai-commons
+
+Base module with no dependencies on other Spring AI modules. Contains:
+- Core domain models (`Document`, `TextSplitter`)
+- JSON utilities and resource handling
+- Structured logging and observability support
+
+==== spring-ai-model
+
+Provides AI capability abstractions:
+- Interfaces like `ChatModel`, `EmbeddingModel`, and `ImageModel`
+- Message types and prompt templates
+- Function-calling framework (`ToolDefinition`, `ToolCallback`)
+- Content filtering and observation support
+
+==== spring-ai-vector-store
+
+Unified vector database abstraction:
+- `VectorStore` interface for similarity search
+- Advanced filtering with SQL-like expressions
+- `SimpleVectorStore` for in-memory usage
+- Batching support for embeddings
+
+==== spring-ai-client-chat
+
+High-level conversational AI APIs:
+- `ChatClient` interface
+- Conversation persistence via `ChatMemory`
+- Response conversion with `OutputConverter`
+- Advisor-based interception
+- Synchronous and reactive streaming support
+
+==== spring-ai-advisors-vector-store
+
+Bridges chat with vector stores for RAG:
+- `QuestionAnswerAdvisor`: injects context into prompts
+- `VectorStoreChatMemoryAdvisor`: stores/retrieves conversation history
+
+==== spring-ai-model-chat-memory-cassandra
+
+Apache Cassandra persistence for `ChatMemory`:
+- `CassandraChatMemory` implementation
+- Type-safe CQL with Cassandra's QueryBuilder
+==== spring-ai-model-chat-memory-neo4j
+
+Neo4j graph database persistence for chat conversations.
+
+==== spring-ai-rag
+
+Comprehensive framework for Retrieval Augmented Generation:
+- Modular architecture for RAG pipelines
+- `RetrievalAugmentationAdvisor` as main entry point
+- Functional programming principles with composable components
+
+=== Dependency Structure
+
+The dependency hierarchy can be summarized as:
+
+* `spring-ai-commons` (foundation)
+* `spring-ai-model` (depends on commons)
+* `spring-ai-vector-store` and `spring-ai-client-chat` (both depend on model)
+* `spring-ai-advisors-vector-store` and `spring-ai-rag` (depend on both client-chat and vector-store)
+* `spring-ai-model-chat-memory-*` modules (depend on client-chat)
+
+[[common-toolcontext-changes]]
+=== ToolContext Changes
+
+The `ToolContext` class has been enhanced to support both explicit and implicit tool resolution. Tools can now be:
+
+1. **Explicitly Included**: Tools that are explicitly requested in the prompt and included in the call to the model.
+2. **Implicitly Available**: Tools that are made available for runtime dynamic resolution, but never included in any call to the model unless explicitly requested.
+
+Starting with 1.0.0-M7, tools are only included in the call to the model if they are explicitly requested in the prompt or explicitly included in the call.
+
+Additionally, the `ToolContext` class has now been marked as final and cannot be extended anymore. It was never supposed to be subclassed. You can add all the contextual data you need when instantiating a `ToolContext`, in the form of a `Map<String, Object>`. For more information, check the [documentation](https://docs.spring.io/spring-ai/reference/api/tools.html#_tool_context).
+
+[[upgrading-to-1-0-0-m6]]
+== Upgrading to 1.0.0-M6
+
+=== Changes to Usage Interface and DefaultUsage Implementation
+
+The `Usage` interface and its default implementation `DefaultUsage` have undergone the following changes:
+
+1. Method Rename:
+* `getGenerationTokens()` is now `getCompletionTokens()`
+
+2. Type Changes:
+* All token count fields in `DefaultUsage` changed from `Long` to `Integer`:
+** `promptTokens`
+** `completionTokens` (formerly `generationTokens`)
+** `totalTokens`
+
+==== Required Actions
+
+* Replace all calls to `getGenerationTokens()` with `getCompletionTokens()`
+
+* Update `DefaultUsage` constructor calls:
+[source,java]
+----
+// Old (M5)
+new DefaultUsage(Long promptTokens, Long generationTokens, Long totalTokens)
+
+// New (M6)
+new DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens)
+----
+
+
+NOTE: For more information on handling Usage, refer xref:api/usage-handling.adoc[here]
+
+==== JSON Ser/Deser changes
+While M6 maintains backward compatibility for JSON deserialization of the `generationTokens` field, this field will be removed in M7. Any persisted JSON documents using the old field name should be updated to use `completionTokens`.
+
+Example of the new JSON format:
+[source,json]
+----
+{
+  "promptTokens": 100,
+  "completionTokens": 50,
+  "totalTokens": 150
+}
+----
+
+=== Changes to usage of FunctionCallingOptions for tool calling
+
+Each `ChatModel` instance, at construction time, accepts an optional `ChatOptions` or `FunctionCallingOptions` instance
+that can be used to configure default tools used for calling the model.
+
+Before 1.0.0-M6:
+
+- any tool passed via the `functions()` method of the default `FunctionCallingOptions` instance was included in
+each call to the model from that `ChatModel` instance, possibly overwritten by runtime options.
+- any tool passed via the `functionCallbacks()` method of the default `FunctionCallingOptions` instance was only
+made available for runtime dynamic resolution (see xref:api/tools.adoc#_tool_resolution[Tool Resolution]), but never
+included in any call to the model unless explicitly requested.
+
+Starting 1.0.0-M6:
+
+- any tool passed via the `functions()` method or the `functionCallbacks()` of the default `FunctionCallingOptions`
+instance is now handled in the same way: it is included in each call to the model from that `ChatModel` instance,
+possibly overwritten by runtime options. With that, there is consistency in the way tools are included in calls
+to the model and prevents any confusion due to a difference in behavior between `functionCallbacks()` and all the other options.
+
+If you want to make a tool available for runtime dynamic resolution and include it in a chat request to the model only
+when explicitly requested, you can use one of the strategies described in xref:api/tools.adoc#_tool_resolution[Tool Resolution].
+
+NOTE: 1.0.0-M6 introduced new APIs for handling tool calling. Backward compatibility is maintained for the old APIs across
+all scenarios, except the one described above. The old APIs are still available, but they are deprecated
+and will be removed in 1.0.0-M7.
+
+=== Removal of deprecated Amazon Bedrock chat models
+
+Starting 1.0.0-M6, Spring AI transitioned to using Amazon Bedrock's Converse API for all Chat conversation implementations in Spring AI.
+All the Amazon Bedrock Chat models are removed except the Embedding models for Cohere and Titan.
+
+NOTE: Refer to xref:api/chat/bedrock-converse.adoc[Bedrock Converse] documentation for using the chat models.
+
+=== Changes to use Spring Boot 3.4.2 for dependency management
+
+Spring AI updates to use Spring Boot 3.4.2 for the dependency management. You can refer https://github.com/spring-projects/spring-boot/blob/v3.4.2/spring-boot-project/spring-boot-dependencies/build.gradle[here] for the dependencies which Spring Boot 3.4.2
+
+==== Required Actions
+
+* If you are upgrading to Spring Boot 3.4.2, please make sure to refer to https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.4-Release-Notes#upgrading-from-spring-boot-33[this] documentation for the changes required to configure the REST Client. Notably, if you don’t have an HTTP client library on the classpath, this will likely result in the use of `JdkClientHttpRequestFactory` where `SimpleClientHttpRequestFactory` would have been used previously. To switch to use `SimpleClientHttpRequestFactory`, you need to set `spring.http.client.factory=simple`.
+* If you are using a different version of Spring Boot (say Spring Boot 3.3.x) and need a specific version of a dependency, you can override it in your build configuration.
+
+=== Vector Store API changes
+
+In version 1.0.0-M6, the `delete` method in the `VectorStore` interface has been modified to be a void operation instead of returning an `Optional<Boolean>`.
+If your code previously checked the return value of the delete operation, you'll need to remove this check.
+The operation now throws an exception if the deletion fails, providing more direct error handling.
+
+==== Before 1.0.0-M6:
+[source,java]
+----
+Optional<Boolean> result = vectorStore.delete(ids);
+if (result.isPresent() && result.get()) {
+    // handle successful deletion
+}
+----
+
+==== In 1.0.0-M6 and later:
+[source,java]
+----
+vectorStore.delete(ids);
+// deletion successful if no exception is thrown
+----
 
 == Upgrading to 1.0.0.M5
 
@@ -168,7 +648,7 @@ Renamed POM artifact names:
 - spring-ai-qdrant -> spring-ai-qdrant-store
 - spring-ai-gemfire -> spring-ai-gemfire-store
 - spring-ai-azure-vector-store-spring-boot-starter -> spring-ai-azure-store-spring-boot-starter
-- spring-ai-redis-spring-boot-starter -> spring-ai-redis-store-spring-boot-starter
+- spring-ai-redis-spring-boot-starter -> spring-ai-starter-vector-store-redis
 
 == Upgrading to 0.8.1
 
@@ -250,7 +730,7 @@ Refactor the Ollama client and related classes and package names
 
 * Replace the org.springframework.ai.ollama.client.OllamaClient by org.springframework.ai.ollama.OllamaModelCall.
 * The OllamaChatClient method signatures have changed.
-* Rename the org.springframework.ai.autoconfigure.ollama.OllamaProperties into org.springframework.ai.autoconfigure.ollama.OllamaChatProperties and change the suffix to: `spring.ai.ollama.chat`. Some of the properties have changed as well.
+* Rename the org.springframework.ai.autoconfigure.ollama.OllamaProperties into org.springframework.ai.model.ollama.autoconfigure.OllamaChatProperties and change the suffix to: `spring.ai.ollama.chat`. Some of the properties have changed as well.
 
 === December 19, 2023 Update
 
@@ -313,4 +793,3 @@ You can access `0.7.1-SNAPSHOT` artifacts as before and still access https://mar
 * PaLM API support removal
 
 As a follow up to the announcement to https://ai.google.dev/palm_docs/deprecation[deprecate PaLM API], the PaLM API support is removed.
-

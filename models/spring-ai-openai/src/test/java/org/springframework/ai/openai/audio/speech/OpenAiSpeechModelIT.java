@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
@@ -31,6 +33,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * @author Ahmed Yousri
+ * @author Jonghoon Park
+ */
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenAiSpeechModelIT extends AbstractIT {
@@ -55,7 +61,7 @@ class OpenAiSpeechModelIT extends AbstractIT {
 	@Test
 	void shouldGenerateNonEmptyMp3AudioFromSpeechPrompt() {
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
-			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue())
 			.speed(SPEED)
 			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
 			.model(OpenAiAudioApi.TtsModel.TTS_1.value)
@@ -71,9 +77,27 @@ class OpenAiSpeechModelIT extends AbstractIT {
 	}
 
 	@Test
-	void speechRateLimitTest() {
+	void shouldGenerateNonEmptyWavAudioFromSpeechPrompt() {
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
 			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+			.speed(SPEED)
+			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.WAV)
+			.model(OpenAiAudioApi.TtsModel.TTS_1.value)
+			.build();
+		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
+				speechOptions);
+		SpeechResponse response = this.speechModel.call(speechPrompt);
+		byte[] audioBytes = response.getResult().getOutput();
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getOutput()).isNotEmpty();
+		assertThat(audioBytes).hasSizeGreaterThan(0);
+
+	}
+
+	@Test
+	void speechRateLimitTest() {
+		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
+			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue())
 			.speed(SPEED)
 			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
 			.model(OpenAiAudioApi.TtsModel.TTS_1.value)
@@ -93,7 +117,7 @@ class OpenAiSpeechModelIT extends AbstractIT {
 	void shouldStreamNonEmptyResponsesForValidSpeechPrompts() {
 
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
-			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue())
 			.speed(SPEED)
 			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
 			.model(OpenAiAudioApi.TtsModel.TTS_1.value)
@@ -109,6 +133,24 @@ class OpenAiSpeechModelIT extends AbstractIT {
 		// System.out.println("Audio data chunk size: " +
 		// response.getResult().getOutput().length);
 		assertThat(response.getResult().getOutput()).isNotEmpty());
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "alloy", "echo", "fable", "onyx", "nova", "shimmer", "sage", "coral", "ash" })
+	void speechVoicesTest(String voice) {
+		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
+			.voice(voice)
+			.speed(SPEED)
+			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
+			.model(OpenAiAudioApi.TtsModel.TTS_1.value)
+			.build();
+		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
+				speechOptions);
+		SpeechResponse response = this.speechModel.call(speechPrompt);
+		byte[] audioBytes = response.getResult().getOutput();
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getOutput()).isNotEmpty();
+		assertThat(audioBytes).hasSizeGreaterThan(0);
 	}
 
 }

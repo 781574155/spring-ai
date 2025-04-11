@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.springframework.ai.openai.api;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -26,6 +25,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.NoopApiKey;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.ByteArrayResource;
@@ -33,7 +35,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -45,6 +46,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  * <a href="https://platform.openai.com/docs/api-reference/audio">OpenAI Audio</a>
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
+ * @author Jonghoon Park
  * @since 0.8.1
  */
 public class OpenAiAudioApi {
@@ -55,50 +58,6 @@ public class OpenAiAudioApi {
 
 	/**
 	 * Create a new audio api.
-	 * @param openAiToken OpenAI apiKey.
-	 */
-	public OpenAiAudioApi(String openAiToken) {
-		this(OpenAiApiConstants.DEFAULT_BASE_URL, openAiToken, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	/**
-	 * Create a new audio api.
-	 * @param baseUrl api base URL.
-	 * @param openAiToken OpenAI apiKey.
-	 * @param restClientBuilder RestClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 */
-	public OpenAiAudioApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
-
-		Consumer<HttpHeaders> authHeaders = h -> h.setBearerAuth(openAiToken);
-
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(authHeaders)
-			.defaultStatusHandler(responseErrorHandler)
-			.build();
-
-		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(authHeaders).build();
-	}
-
-	/**
-	 * Create a new audio api.
-	 * @param baseUrl api base URL.
-	 * @param apiKey OpenAI apiKey.
-	 * @param restClientBuilder RestClient builder.
-	 * @param webClientBuilder WebClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 */
-	public OpenAiAudioApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
-
-		this(baseUrl, apiKey, CollectionUtils.toMultiValueMap(Map.of()), restClientBuilder, webClientBuilder,
-				responseErrorHandler);
-	}
-
-	/**
-	 * Create a new audio api.
 	 * @param baseUrl api base URL.
 	 * @param apiKey OpenAI apiKey.
 	 * @param headers the http headers to use.
@@ -106,12 +65,14 @@ public class OpenAiAudioApi {
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public OpenAiAudioApi(String baseUrl, String apiKey, MultiValueMap<String, String> headers,
+	public OpenAiAudioApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> authHeaders = h -> {
-			h.setBearerAuth(apiKey);
+			if (!(apiKey instanceof NoopApiKey)) {
+				h.setBearerAuth(apiKey.getValue());
+			}
 			h.addAll(headers);
 			// h.setContentType(MediaType.APPLICATION_JSON);
 		};
@@ -122,6 +83,10 @@ public class OpenAiAudioApi {
 			.build();
 
 		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(authHeaders).build();
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	/**
@@ -135,7 +100,7 @@ public class OpenAiAudioApi {
 
 	/**
 	 * Streams audio generated from the input text.
-	 *
+	 * <p>
 	 * This method sends a POST request to the OpenAI API to generate audio from the
 	 * provided text. The audio is streamed back as a Flux of ResponseEntity objects, each
 	 * containing a byte array of the audio data.
@@ -366,7 +331,7 @@ public class OpenAiAudioApi {
 	// @formatter:off
 		@JsonProperty("model") String model,
 		@JsonProperty("input") String input,
-		@JsonProperty("voice") Voice voice,
+		@JsonProperty("voice") String voice,
 		@JsonProperty("response_format") AudioResponseFormat responseFormat,
 		@JsonProperty("speed") Float speed) {
 		// @formatter:on
@@ -392,7 +357,13 @@ public class OpenAiAudioApi {
 			@JsonProperty("nova")
 			NOVA("nova"),
 			@JsonProperty("shimmer")
-			SHIMMER("shimmer");
+			SHIMMER("shimmer"),
+			@JsonProperty("sage")
+			SAGE("sage"),
+			@JsonProperty("coral")
+			CORAL("coral"),
+			@JsonProperty("ash")
+			ASH("ash");
 			// @formatter:on
 
 			public final String value;
@@ -408,8 +379,8 @@ public class OpenAiAudioApi {
 		}
 
 		/**
-		 * The format to audio in. Supported formats are mp3, opus, aac, and flac.
-		 * Defaults to mp3.
+		 * The format to audio in. Supported formats are mp3, opus, aac, wav, pcm and
+		 * flac. Defaults to mp3.
 		 */
 		public enum AudioResponseFormat {
 
@@ -421,7 +392,11 @@ public class OpenAiAudioApi {
 			@JsonProperty("aac")
 			AAC("aac"),
 			@JsonProperty("flac")
-			FLAC("flac");
+			FLAC("flac"),
+			@JsonProperty("wav")
+			WAV("wav"),
+			@JsonProperty("pcm")
+			PCM("pcm");
 			// @formatter:on
 
 			public final String value;
@@ -445,33 +420,38 @@ public class OpenAiAudioApi {
 
 			private String input;
 
-			private Voice voice;
+			private String voice;
 
 			private AudioResponseFormat responseFormat = AudioResponseFormat.MP3;
 
 			private Float speed;
 
-			public Builder withModel(String model) {
+			public Builder model(String model) {
 				this.model = model;
 				return this;
 			}
 
-			public Builder withInput(String input) {
+			public Builder input(String input) {
 				this.input = input;
 				return this;
 			}
 
-			public Builder withVoice(Voice voice) {
+			public Builder voice(String voice) {
 				this.voice = voice;
 				return this;
 			}
 
-			public Builder withResponseFormat(AudioResponseFormat responseFormat) {
+			public Builder voice(Voice voice) {
+				this.voice = voice.getValue();
+				return this;
+			}
+
+			public Builder responseFormat(AudioResponseFormat responseFormat) {
 				this.responseFormat = responseFormat;
 				return this;
 			}
 
-			public Builder withSpeed(Float speed) {
+			public Builder speed(Float speed) {
 				this.speed = speed;
 				return this;
 			}
@@ -563,37 +543,37 @@ public class OpenAiAudioApi {
 
 			private GranularityType granularityType;
 
-			public Builder withFile(byte[] file) {
+			public Builder file(byte[] file) {
 				this.file = file;
 				return this;
 			}
 
-			public Builder withModel(String model) {
+			public Builder model(String model) {
 				this.model = model;
 				return this;
 			}
 
-			public Builder withLanguage(String language) {
+			public Builder language(String language) {
 				this.language = language;
 				return this;
 			}
 
-			public Builder withPrompt(String prompt) {
+			public Builder prompt(String prompt) {
 				this.prompt = prompt;
 				return this;
 			}
 
-			public Builder withResponseFormat(TranscriptResponseFormat response_format) {
-				this.responseFormat = response_format;
+			public Builder responseFormat(TranscriptResponseFormat responseFormat) {
+				this.responseFormat = responseFormat;
 				return this;
 			}
 
-			public Builder withTemperature(Float temperature) {
+			public Builder temperature(Float temperature) {
 				this.temperature = temperature;
 				return this;
 			}
 
-			public Builder withGranularityType(GranularityType granularityType) {
+			public Builder granularityType(GranularityType granularityType) {
 				this.granularityType = granularityType;
 				return this;
 			}
@@ -652,27 +632,27 @@ public class OpenAiAudioApi {
 
 			private Float temperature;
 
-			public Builder withFile(byte[] file) {
+			public Builder file(byte[] file) {
 				this.file = file;
 				return this;
 			}
 
-			public Builder withModel(String model) {
+			public Builder model(String model) {
 				this.model = model;
 				return this;
 			}
 
-			public Builder withPrompt(String prompt) {
+			public Builder prompt(String prompt) {
 				this.prompt = prompt;
 				return this;
 			}
 
-			public Builder withResponseFormat(TranscriptResponseFormat responseFormat) {
+			public Builder responseFormat(TranscriptResponseFormat responseFormat) {
 				this.responseFormat = responseFormat;
 				return this;
 			}
 
-			public Builder withTemperature(Float temperature) {
+			public Builder temperature(Float temperature) {
 				this.temperature = temperature;
 				return this;
 			}
@@ -760,6 +740,73 @@ public class OpenAiAudioApi {
 			@JsonProperty("compression_ratio") Float compressionRatio,
 			@JsonProperty("no_speech_prob") Float noSpeechProb) {
 			// @formatter:on
+		}
+
+	}
+
+	/**
+	 * Builder to construct {@link OpenAiAudioApi} instance.
+	 */
+	public static class Builder {
+
+		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
+
+		private ApiKey apiKey;
+
+		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(ApiKey apiKey) {
+			Assert.notNull(apiKey, "apiKey cannot be null");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
+			return this;
+		}
+
+		public Builder headers(MultiValueMap<String, String> headers) {
+			Assert.notNull(headers, "headers cannot be null");
+			this.headers = headers;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public OpenAiAudioApi build() {
+			Assert.notNull(this.apiKey, "apiKey must be set");
+			return new OpenAiAudioApi(this.baseUrl, this.apiKey, this.headers, this.restClientBuilder,
+					this.webClientBuilder, this.responseErrorHandler);
 		}
 
 	}

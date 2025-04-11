@@ -21,9 +21,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
 import org.mariadb.jdbc.Driver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -43,7 +45,8 @@ public class MariaDBSchemaValidator {
 
 	private boolean isTableExists(String schemaName, String tableName) {
 		// schema and table are expected to be escaped
-		String sql = String.format("SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = ",
+		String sql = String.format(
+				"SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
 				(schemaName == null) ? "SCHEMA()" : schemaName, tableName);
 		try {
 			// Query for a single integer value, if it exists, table exists
@@ -151,8 +154,9 @@ public class MariaDBSchemaValidator {
 		try {
 			String quotedId = Driver.enquoteIdentifier(identifier, alwaysQuote);
 			// force use of simple table name
-			if (Pattern.compile("`?[\\p{Alnum}_]*`?").matcher(identifier).matches())
+			if (Pattern.compile("`?[\\p{Alnum}_]*`?").matcher(identifier).matches()) {
 				return quotedId;
+			}
 			throw new IllegalArgumentException(String
 				.format("Identifier '%s' should only contain alphanumeric characters and underscores", quotedId));
 		}

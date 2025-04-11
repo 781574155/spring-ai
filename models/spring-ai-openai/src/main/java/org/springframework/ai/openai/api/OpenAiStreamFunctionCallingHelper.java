@@ -31,6 +31,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCal
 import org.springframework.ai.openai.api.OpenAiApi.LogProbs;
 import org.springframework.ai.openai.api.OpenAiApi.Usage;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Helper class to support Streaming function calling.
@@ -114,7 +115,7 @@ public class OpenAiStreamFunctionCallingHelper {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}
 			var currentToolCall = current.toolCalls().iterator().next();
-			if (currentToolCall.id() != null) {
+			if (StringUtils.hasText(currentToolCall.id())) {
 				if (lastPreviousTooCall != null) {
 					toolCalls.add(lastPreviousTooCall);
 				}
@@ -151,7 +152,7 @@ public class OpenAiStreamFunctionCallingHelper {
 		if (previous == null) {
 			return current;
 		}
-		String id = (current.id() != null ? current.id() : previous.id());
+		String id = (StringUtils.hasText(current.id()) ? current.id() : previous.id());
 		String type = (current.type() != null ? current.type() : previous.type());
 		ChatCompletionFunction function = merge(previous.function(), current.function());
 		return new ToolCall(id, type, function);
@@ -161,7 +162,7 @@ public class OpenAiStreamFunctionCallingHelper {
 		if (previous == null) {
 			return current;
 		}
-		String name = (current.name() != null ? current.name() : previous.name());
+		String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
 		StringBuilder arguments = new StringBuilder();
 		if (previous.arguments() != null) {
 			arguments.append(previous.arguments());

@@ -153,25 +153,6 @@ public class TitanEmbeddingBedrockApi extends
 				return this;
 			}
 
-			/**
-			 * @deprecated use {@link #inputText( String)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withInputText(String inputText) {
-				this.inputText = inputText;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #inputImage( String)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withInputImage(String inputImage) {
-				this.inputImage = inputImage;
-				return this;
-			}
-
-
 			public TitanEmbeddingRequest build() {
 				Assert.isTrue(this.inputText != null || this.inputImage != null,
 						"At least one of the inputText or inputImage parameters must be provided!");
@@ -196,7 +177,10 @@ public class TitanEmbeddingBedrockApi extends
 	public record TitanEmbeddingResponse(
 			@JsonProperty("embedding") float[] embedding,
 			@JsonProperty("inputTextTokenCount") Integer inputTextTokenCount,
+			@JsonProperty("successCount") Integer successCount,
+			@JsonProperty("failureCount") Integer failureCount,
 			@JsonProperty("embeddingsByType") Map<String, Object> embeddingsByType,
+			@JsonProperty("results") Object results,
 			@JsonProperty("message") Object message) {
 
 

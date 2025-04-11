@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
@@ -36,11 +37,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Jonghoon Park
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiAudioApiIT {
 
-	OpenAiAudioApi audioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
+	OpenAiAudioApi audioApi = OpenAiAudioApi.builder()
+		.apiKey(new SimpleApiKey(System.getenv("OPENAI_API_KEY")))
+		.build();
 
 	@SuppressWarnings("null")
 	@Test
@@ -48,9 +52,9 @@ public class OpenAiAudioApiIT {
 
 		byte[] speech = this.audioApi
 			.createSpeech(SpeechRequest.builder()
-				.withModel(TtsModel.TTS_1_HD.getValue())
-				.withInput("Hello, my name is Chris and I love Spring A.I.")
-				.withVoice(Voice.ONYX)
+				.model(TtsModel.TTS_1_HD.getValue())
+				.input("Hello, my name is Chris and I love Spring A.I.")
+				.voice(Voice.ONYX.getValue())
 				.build())
 			.getBody();
 
@@ -60,22 +64,23 @@ public class OpenAiAudioApiIT {
 
 		StructuredResponse translation = this.audioApi
 			.createTranslation(
-					TranslationRequest.builder().withModel(WhisperModel.WHISPER_1.getValue()).withFile(speech).build(),
+					TranslationRequest.builder().model(WhisperModel.WHISPER_1.getValue()).file(speech).build(),
 					StructuredResponse.class)
 			.getBody();
 
 		assertThat(translation.text().replaceAll(",", "")).isEqualTo("Hello my name is Chris and I love Spring AI.");
 
-		StructuredResponse transcriptionEnglish = this.audioApi.createTranscription(
-				TranscriptionRequest.builder().withModel(WhisperModel.WHISPER_1.getValue()).withFile(speech).build(),
-				StructuredResponse.class)
+		StructuredResponse transcriptionEnglish = this.audioApi
+			.createTranscription(
+					TranscriptionRequest.builder().model(WhisperModel.WHISPER_1.getValue()).file(speech).build(),
+					StructuredResponse.class)
 			.getBody();
 
 		assertThat(transcriptionEnglish.text().replaceAll(",", ""))
 			.isEqualTo("Hello my name is Chris and I love Spring AI.");
 
 		StructuredResponse transcriptionDutch = this.audioApi
-			.createTranscription(TranscriptionRequest.builder().withFile(speech).withLanguage("nl").build(),
+			.createTranscription(TranscriptionRequest.builder().file(speech).language("nl").build(),
 					StructuredResponse.class)
 			.getBody();
 
