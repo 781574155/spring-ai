@@ -38,6 +38,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioPa
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.openai.api.ResponseFormat;
+import org.springframework.ai.openai.tanqi.McpServer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.ai.openai.tanqi.TanqiFile;
@@ -227,6 +228,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("tanqi_files") List<TanqiFile> tanqiFiles;
 	private @JsonProperty("conversation_id") String conversationId;
 	private @JsonProperty("req_type") String reqType;
+	private @JsonProperty("mcp_servers") List<McpServer> mcpServers;
 
 	// @formatter:on
 
@@ -626,6 +628,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 	public void setReqType(String reqType) {
 		this.reqType = reqType;
+	}
+
+	public List<McpServer> getMcpServers() {
+		return mcpServers;
+	}
+
+	public void setMcpServers(List<McpServer> mcpServers) {
+		this.mcpServers = mcpServers;
 	}
 
 	@Override

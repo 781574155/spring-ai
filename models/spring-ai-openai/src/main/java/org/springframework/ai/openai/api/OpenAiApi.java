@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.openai.tanqi.DocReferences;
+import org.springframework.ai.openai.tanqi.McpServer;
 import org.springframework.ai.openai.tanqi.TanqiFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -872,7 +873,8 @@ public class OpenAiApi {
 			@JsonProperty("category") String category,
 			@JsonProperty("tanqi_files") List<TanqiFile> tanqiFiles,
 			@JsonProperty("conversation_id") String conversationId,
-			@JsonProperty("req_type") String reqType) {
+			@JsonProperty("req_type") String reqType,
+			@JsonProperty("mcp_servers") List<McpServer> mcpServers) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
@@ -884,7 +886,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null, null, null, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
-					null, null, null, null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -898,7 +900,7 @@ public class OpenAiApi {
 			this(messages, model, null, null, null, null, null, null,
 					null, null, null, List.of(OutputModality.AUDIO, OutputModality.TEXT), audio, null, null,
 					null, null, null, stream, null, null, null,
-					null, null, null, null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -913,7 +915,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, temperature, null,
-					null, null, null, null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -929,7 +931,7 @@ public class OpenAiApi {
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, false, null, 0.8, null,
-					tools, toolChoice, null, null, null, null, null, null, null);
+					tools, toolChoice, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -942,7 +944,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, null, null,
-					null, null, null, null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -955,7 +957,7 @@ public class OpenAiApi {
 			return new ChatCompletionRequest(this.messages, this.model, this.store, this.metadata, this.frequencyPenalty, this.logitBias, this.logprobs,
 			this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
 			this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
-			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.category, this.tanqiFiles, this.conversationId, this.reqType);
+			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.category, this.tanqiFiles, this.conversationId, this.reqType, this.mcpServers);
 		}
 
 		/**
