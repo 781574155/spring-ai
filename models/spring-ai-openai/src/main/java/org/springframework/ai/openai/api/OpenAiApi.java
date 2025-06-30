@@ -1281,7 +1281,6 @@ public class OpenAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ToolMessage(// @formatter:off
 				@JsonProperty("name") String name,
-				@JsonProperty("tool_call_id") String toolCallId,
 				@JsonProperty("content") String content
 		) { // @formatter:on
 		}
