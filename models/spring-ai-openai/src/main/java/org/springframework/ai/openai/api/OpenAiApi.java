@@ -1311,7 +1311,7 @@ public class OpenAiApi {
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionMessage(// @formatter:off
 			@JsonProperty("content") Object rawContent,
-			@JsonProperty("role") Role role,
+			@JsonProperty("role") Object role,
 			@JsonProperty("name") String name,
 			@JsonProperty("tool_call_id") String toolCallId,
 			@JsonProperty("tool_calls") @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,

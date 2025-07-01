@@ -215,7 +215,7 @@ public class OpenAiChatModel implements ChatModel {
 				List<Generation> generations = choices.stream().map(choice -> {
 					Map<String, Object> metadata = Map.of(
 							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
-							"role", choice.message().role() != null ? choice.message().role().name() : "",
+							"role", choice.message().role() != null ? choice.message().role().toString() : "",
 							"index", choice.index() != null ? choice.index() : 0,
 							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
 							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
@@ -310,7 +310,7 @@ public class OpenAiChatModel implements ChatModel {
 
 						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> { // @formatter:off
 							if (choice.message().role() != null) {
-								roleMap.putIfAbsent(id, choice.message().role().name());
+								roleMap.putIfAbsent(id, choice.message().role().toString());
 							}
 							Map<String, Object> metadata = Map.of(
 									"id", id,
@@ -337,28 +337,7 @@ public class OpenAiChatModel implements ChatModel {
 					// final response. Hence, the following overlapping buffer is
 					// created to store both the current and the subsequent response
 					// to accumulate the usage from the subsequent response.
-				}))
-				.buffer(2, 1)
-				.map(bufferList -> {
-					ChatResponse firstResponse = bufferList.get(0);
-					if (request.streamOptions() != null && request.streamOptions().includeUsage()) {
-						if (bufferList.size() == 2) {
-							ChatResponse secondResponse = bufferList.get(1);
-							if (secondResponse != null && secondResponse.getMetadata() != null) {
-								// This is the usage from the final Chat response for a
-								// given Chat request.
-								Usage usage = secondResponse.getMetadata().getUsage();
-								if (!UsageCalculator.isEmpty(usage)) {
-									// Store the usage from the final response to the
-									// penultimate response for accumulation.
-									return new ChatResponse(firstResponse.getResults(),
-											from(firstResponse.getMetadata(), usage));
-								}
-							}
-						}
-					}
-					return firstResponse;
-				});
+				}));
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
@@ -451,7 +430,9 @@ public class OpenAiChatModel implements ChatModel {
 			.usage(usage)
 			.model(result.model() != null ? result.model() : "")
 			.keyValue("created", result.created() != null ? result.created() : 0L)
-			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "");
+			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
+			// add for tanqi
+			.keyValue("response", result);
 		if (rateLimit != null) {
 			builder.rateLimit(rateLimit);
 		}
