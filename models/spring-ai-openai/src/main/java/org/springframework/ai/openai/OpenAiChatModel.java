@@ -608,13 +608,14 @@ public class OpenAiChatModel implements ChatModel {
 
 	private MediaContent mapToMediaContent(Media media) {
 		var mimeType = media.getMimeType();
-		if (MimeTypeUtils.parseMimeType("audio/mp3").equals(mimeType)) {
+		/// modify by tanqi, 全部传url
+		if (mimeType.getType().equals("audio")) {
 			return new MediaContent(
-					new MediaContent.InputAudio(fromAudioData(media.getData()), MediaContent.InputAudio.Format.MP3));
+					new MediaContent.AudioUrl(this.fromMediaData(media.getMimeType(), media.getData())));
 		}
-		if (MimeTypeUtils.parseMimeType("audio/wav").equals(mimeType)) {
+		if (mimeType.getType().equals("video")) {
 			return new MediaContent(
-					new MediaContent.InputAudio(fromAudioData(media.getData()), MediaContent.InputAudio.Format.WAV));
+					new MediaContent.VideoUrl(this.fromMediaData(media.getMimeType(), media.getData())));
 		}
 		if (MimeTypeUtils.parseMimeType("application/pdf").equals(mimeType)) {
 			return new MediaContent(new MediaContent.InputFile(media.getName(),

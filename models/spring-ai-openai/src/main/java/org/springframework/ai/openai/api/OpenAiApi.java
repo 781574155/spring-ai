@@ -1389,6 +1389,8 @@ public class OpenAiApi {
 			@JsonProperty("text") String text,
 			@JsonProperty("image_url") ImageUrl imageUrl,
 			@JsonProperty("input_audio") InputAudio inputAudio,
+			@JsonProperty("audio_url") AudioUrl audioUrl,
+			@JsonProperty("video_url") VideoUrl videoUrl,
 			@JsonProperty("file") InputFile inputFile) { // @formatter:on
 
 			/**
@@ -1396,7 +1398,7 @@ public class OpenAiApi {
 			 * @param text The text content of the message.
 			 */
 			public MediaContent(String text) {
-				this("text", text, null, null, null);
+				this("text", text, null, null, null, null, null);
 			}
 
 			/**
@@ -1404,7 +1406,7 @@ public class OpenAiApi {
 			 * @param imageUrl The image content of the message.
 			 */
 			public MediaContent(ImageUrl imageUrl) {
-				this("image_url", null, imageUrl, null, null);
+				this("image_url", null, imageUrl, null, null, null, null);
 			}
 
 			/**
@@ -1412,7 +1414,7 @@ public class OpenAiApi {
 			 * @param inputAudio The audio content of the message.
 			 */
 			public MediaContent(InputAudio inputAudio) {
-				this("input_audio", null, null, inputAudio, null);
+				this("input_audio", null, null, inputAudio, null, null, null);
 			}
 
 			/**
@@ -1420,7 +1422,7 @@ public class OpenAiApi {
 			 * @param inputFile The file content of the message.
 			 */
 			public MediaContent(InputFile inputFile) {
-				this("file", null, null, null, inputFile);
+				this("file", null, null, null, null, null, inputFile);
 			}
 
 			/**
@@ -1456,6 +1458,23 @@ public class OpenAiApi {
 					this(url, null);
 				}
 
+			}
+
+			/// add by tanqi
+			public MediaContent(AudioUrl audioUrl) {
+				this("audio_url", null, null, null, audioUrl, null, null);
+			}
+
+			public MediaContent(VideoUrl videoUrl) {
+				this("video_url", null, null, null, null, videoUrl, null);
+			}
+
+			@JsonInclude(Include.NON_NULL)
+			public record AudioUrl(@JsonProperty("url") String url) {
+			}
+
+			@JsonInclude(Include.NON_NULL)
+			public record VideoUrl(@JsonProperty("url") String url) {
 			}
 
 			/**
