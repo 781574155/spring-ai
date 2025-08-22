@@ -36,11 +36,11 @@ public class OpenAiStreamFunctionCallingHelperTest {
 	@Test
 	public void merge_whenInputIsValid() {
 		var expectedResult = new OpenAiApi.ChatCompletionChunk("id", Collections.emptyList(),
-				System.currentTimeMillis(), "model", "serviceTier", "fingerPrint", "object", null);
+				System.currentTimeMillis(), "model", "serviceTier", "fingerPrint", "object", null, null);
 		var previous = new OpenAiApi.ChatCompletionChunk(null, null, expectedResult.created(), expectedResult.model(),
-				expectedResult.serviceTier(), null, null, null);
+				expectedResult.serviceTier(), null, null, null, null);
 		var current = new OpenAiApi.ChatCompletionChunk(expectedResult.id(), null, null, null, null,
-				expectedResult.systemFingerprint(), expectedResult.object(), expectedResult.usage());
+				expectedResult.systemFingerprint(), expectedResult.object(), expectedResult.usage(), null);
 
 		var result = helper.merge(previous, current);
 		assertThat(result).isEqualTo(expectedResult);
@@ -53,7 +53,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 
 	@Test
 	public void isStreamingToolFunctionCall_whenChatCompletionChunkChoicesIsEmpty() {
-		var chunk = new OpenAiApi.ChatCompletionChunk(null, Collections.emptyList(), null, null, null, null, null,
+		var chunk = new OpenAiApi.ChatCompletionChunk(null, Collections.emptyList(), null, null, null, null, null, null,
 				null);
 		assertThat(helper.isStreamingToolFunctionCall(chunk)).isFalse();
 	}
@@ -61,7 +61,8 @@ public class OpenAiStreamFunctionCallingHelperTest {
 	@Test
 	public void isStreamingToolFunctionCall_whenChatCompletionChunkFirstChoiceIsNull() {
 		var choice = (org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk.ChunkChoice) null;
-		var chunk = new OpenAiApi.ChatCompletionChunk(null, Arrays.asList(choice), null, null, null, null, null, null);
+		var chunk = new OpenAiApi.ChatCompletionChunk(null, Arrays.asList(choice), null, null, null, null, null, null,
+				null);
 		assertThat(helper.isStreamingToolFunctionCall(chunk)).isFalse();
 	}
 
@@ -70,7 +71,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		var choice = new org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, null,
 				null);
 		var chunk = new OpenAiApi.ChatCompletionChunk(null, Arrays.asList(choice, null), null, null, null, null, null,
-				null);
+				null, null);
 		assertThat(helper.isStreamingToolFunctionCall(chunk)).isFalse();
 	}
 
@@ -79,7 +80,8 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		var assertion = (Consumer<OpenAiApi.ChatCompletionMessage>) (OpenAiApi.ChatCompletionMessage delta) -> {
 			var choice = new org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null,
 					delta, null);
-			var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null);
+			var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null,
+					null);
 			assertThat(helper.isStreamingToolFunctionCall(chunk)).isFalse();
 		};
 		// Test for null.
@@ -94,7 +96,8 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		var assertion = (Consumer<OpenAiApi.ChatCompletionMessage>) (OpenAiApi.ChatCompletionMessage delta) -> {
 			var choice = new org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null,
 					delta, null);
-			var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null);
+			var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null,
+					null);
 			assertThat(helper.isStreamingToolFunctionCall(chunk)).isTrue();
 		};
 		assertion.accept(new OpenAiApi.ChatCompletionMessage(null, null, null, null,
@@ -109,7 +112,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 
 	@Test
 	public void isStreamingToolFunctionCallFinish_whenChatCompletionChunkChoicesIsEmpty() {
-		var chunk = new OpenAiApi.ChatCompletionChunk(null, Collections.emptyList(), null, null, null, null, null,
+		var chunk = new OpenAiApi.ChatCompletionChunk(null, Collections.emptyList(), null, null, null, null, null, null,
 				null);
 		assertThat(helper.isStreamingToolFunctionCallFinish(chunk)).isFalse();
 	}
@@ -117,7 +120,8 @@ public class OpenAiStreamFunctionCallingHelperTest {
 	@Test
 	public void isStreamingToolFunctionCallFinish_whenChatCompletionChunkFirstChoiceIsNull() {
 		var choice = (org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk.ChunkChoice) null;
-		var chunk = new OpenAiApi.ChatCompletionChunk(null, Arrays.asList(choice), null, null, null, null, null, null);
+		var chunk = new OpenAiApi.ChatCompletionChunk(null, Arrays.asList(choice), null, null, null, null, null, null,
+				null);
 		assertThat(helper.isStreamingToolFunctionCallFinish(chunk)).isFalse();
 	}
 
@@ -126,7 +130,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		var choice = new org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, null,
 				null);
 		var chunk = new OpenAiApi.ChatCompletionChunk(null, Arrays.asList(choice, null), null, null, null, null, null,
-				null);
+				null, null);
 		assertThat(helper.isStreamingToolFunctionCallFinish(chunk)).isFalse();
 	}
 
@@ -134,7 +138,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 	public void isStreamingToolFunctionCallFinish_whenChatCompletionChunkFirstChoiceIsNotToolCalls() {
 		var choice = new org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null,
 				new OpenAiApi.ChatCompletionMessage(null, null), null);
-		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null);
+		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null, null);
 		assertThat(helper.isStreamingToolFunctionCallFinish(chunk)).isFalse();
 	}
 
@@ -143,7 +147,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		var choice = new org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk.ChunkChoice(
 				OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS, null, new OpenAiApi.ChatCompletionMessage(null, null),
 				null);
-		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null);
+		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null, null);
 		assertThat(helper.isStreamingToolFunctionCallFinish(chunk)).isTrue();
 	}
 
@@ -156,7 +160,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 				OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS, 2, new OpenAiApi.ChatCompletionMessage(null, null),
 				null);
 		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice1, choice2), null, null, null, null, null,
-				null);
+				null, null);
 		OpenAiApi.ChatCompletion result = helper.chunkToChatCompletion(chunk);
 		assertThat(result.object()).isEqualTo("chat.completion");
 		assertThat(result.choices()).hasSize(2);

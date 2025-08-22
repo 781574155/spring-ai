@@ -464,7 +464,7 @@ public class OpenAiChatModel implements ChatModel {
 			.toList();
 
 		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.serviceTier(),
-				chunk.systemFingerprint(), "chat.completion", chunk.usage());
+				chunk.systemFingerprint(), "chat.completion", chunk.usage(), chunk.metadata());
 	}
 
 	private DefaultUsage getDefaultUsage(OpenAiApi.Usage usage) {

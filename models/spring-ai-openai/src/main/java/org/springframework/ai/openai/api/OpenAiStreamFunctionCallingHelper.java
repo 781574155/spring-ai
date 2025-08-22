@@ -71,7 +71,10 @@ public class OpenAiStreamFunctionCallingHelper {
 
 		ChunkChoice choice = merge(previousChoice0, currentChoice0);
 		List<ChunkChoice> chunkChoices = choice == null ? List.of() : List.of(choice);
-		return new ChatCompletionChunk(id, chunkChoices, created, model, serviceTier, systemFingerprint, object, usage);
+
+		var metadata = (current.metadata() != null ? current.metadata() : previous.metadata());
+		return new ChatCompletionChunk(id, chunkChoices, created, model, serviceTier, systemFingerprint, object, usage,
+				metadata);
 	}
 
 	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {
@@ -206,7 +209,7 @@ public class OpenAiStreamFunctionCallingHelper {
 			.toList();
 
 		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.serviceTier(),
-				chunk.systemFingerprint(), "chat.completion", null);
+				chunk.systemFingerprint(), "chat.completion", null, chunk.metadata());
 	}
 
 }

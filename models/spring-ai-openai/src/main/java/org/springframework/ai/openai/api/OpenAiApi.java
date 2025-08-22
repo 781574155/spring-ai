@@ -252,7 +252,7 @@ public class OpenAiApi {
 			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
 			.concatMapIterable(window -> {
 				Mono<ChatCompletionChunk> monoChunk = window.reduce(
-						new ChatCompletionChunk(null, null, null, null, null, null, null, null),
+						new ChatCompletionChunk(null, null, null, null, null, null, null, null, null),
 						(previous, current) -> this.chunkMerger.merge(previous, current));
 				return List.of(monoChunk);
 			})
@@ -1601,7 +1601,8 @@ public class OpenAiApi {
 			@JsonProperty("service_tier") String serviceTier,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
 			@JsonProperty("object") String object,
-			@JsonProperty("usage") Usage usage
+			@JsonProperty("usage") Usage usage,
+			@JsonProperty("metadata") Map<String, String> metadata
 	) { // @formatter:on
 
 		/**
@@ -1768,7 +1769,9 @@ public class OpenAiApi {
 			@JsonProperty("service_tier") String serviceTier,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
 			@JsonProperty("object") String object,
-			@JsonProperty("usage") Usage usage) { // @formatter:on
+			@JsonProperty("usage") Usage usage,
+			@JsonProperty("metadata") Map<String, String> metadata
+	) { // @formatter:on
 
 		/**
 		 * Chat completion choice.
