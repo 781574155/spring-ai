@@ -76,7 +76,10 @@ public class OpenAiStreamFunctionCallingHelper {
 
 		ChunkChoice choice = merge(previousChoice0, currentChoice0);
 		List<ChunkChoice> chunkChoices = choice == null ? List.of() : List.of(choice);
-		return new ChatCompletionChunk(id, chunkChoices, created, model, serviceTier, systemFingerprint, object, usage);
+
+		var metadata = (current.metadata() != null ? current.metadata() : previous.metadata());
+		return new ChatCompletionChunk(id, chunkChoices, created, model, serviceTier, systemFingerprint, object, usage,
+				metadata);
 	}
 
 	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {
@@ -103,7 +106,7 @@ public class OpenAiStreamFunctionCallingHelper {
 				: "" + ((previous.content() != null) ? previous.content() : ""));
 		String reasoningContent = (current.reasoningContent() != null ? current.reasoningContent()
 				: "" + ((previous.reasoningContent() != null) ? previous.reasoningContent() : ""));
-		Role role = (current.role() != null ? current.role() : previous.role());
+		Object role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
 		String name = (current.name() != null ? current.name() : previous.name());
 		String toolCallId = (current.toolCallId() != null ? current.toolCallId() : previous.toolCallId());
@@ -218,7 +221,7 @@ public class OpenAiStreamFunctionCallingHelper {
 			.toList();
 
 		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.serviceTier(),
-				chunk.systemFingerprint(), "chat.completion", null);
+				chunk.systemFingerprint(), "chat.completion", null, chunk.metadata());
 	}
 
 }

@@ -278,7 +278,7 @@ public class OpenAiApi {
 			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
 			.concatMapIterable(window -> {
 				Mono<ChatCompletionChunk> monoChunk = window.reduce(
-						new ChatCompletionChunk(null, null, null, null, null, null, null, null),
+						new ChatCompletionChunk(null, null, null, null, null, null, null, null, null),
 						(previous, current) -> this.chunkMerger.merge(previous, current));
 				return List.of(monoChunk);
 			})
@@ -1464,7 +1464,7 @@ public class OpenAiApi {
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionMessage(// @formatter:off
 			@JsonProperty("content") Object rawContent,
-			@JsonProperty("role") Role role,
+			@JsonProperty("role") Object role,
 			@JsonProperty("name") String name,
 			@JsonProperty("tool_call_id") String toolCallId,
 			@JsonProperty("tool_calls") @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
@@ -1543,6 +1543,8 @@ public class OpenAiApi {
 			@JsonProperty("text") String text,
 			@JsonProperty("image_url") ImageUrl imageUrl,
 			@JsonProperty("input_audio") InputAudio inputAudio,
+			@JsonProperty("audio_url") AudioUrl audioUrl,
+			@JsonProperty("video_url") VideoUrl videoUrl,
 			@JsonProperty("file") InputFile inputFile) { // @formatter:on
 
 			/**
@@ -1550,7 +1552,7 @@ public class OpenAiApi {
 			 * @param text The text content of the message.
 			 */
 			public MediaContent(String text) {
-				this("text", text, null, null, null);
+				this("text", text, null, null, null, null, null);
 			}
 
 			/**
@@ -1558,7 +1560,7 @@ public class OpenAiApi {
 			 * @param imageUrl The image content of the message.
 			 */
 			public MediaContent(ImageUrl imageUrl) {
-				this("image_url", null, imageUrl, null, null);
+				this("image_url", null, imageUrl, null, null, null, null);
 			}
 
 			/**
@@ -1566,7 +1568,7 @@ public class OpenAiApi {
 			 * @param inputAudio The audio content of the message.
 			 */
 			public MediaContent(InputAudio inputAudio) {
-				this("input_audio", null, null, inputAudio, null);
+				this("input_audio", null, null, inputAudio, null, null, null);
 			}
 
 			/**
@@ -1574,7 +1576,7 @@ public class OpenAiApi {
 			 * @param inputFile The file content of the message.
 			 */
 			public MediaContent(InputFile inputFile) {
-				this("file", null, null, null, inputFile);
+				this("file", null, null, null, null, null, inputFile);
 			}
 
 			/**
@@ -1610,6 +1612,23 @@ public class OpenAiApi {
 					this(url, null);
 				}
 
+			}
+
+			/// add by tanqi
+			public MediaContent(AudioUrl audioUrl) {
+				this("audio_url", null, null, null, audioUrl, null, null);
+			}
+
+			public MediaContent(VideoUrl videoUrl) {
+				this("video_url", null, null, null, null, videoUrl, null);
+			}
+
+			@JsonInclude(Include.NON_NULL)
+			public record AudioUrl(@JsonProperty("url") String url) {
+			}
+
+			@JsonInclude(Include.NON_NULL)
+			public record VideoUrl(@JsonProperty("url") String url) {
 			}
 
 			/**
@@ -1736,7 +1755,8 @@ public class OpenAiApi {
 			@JsonProperty("service_tier") String serviceTier,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
 			@JsonProperty("object") String object,
-			@JsonProperty("usage") Usage usage
+			@JsonProperty("usage") Usage usage,
+			@JsonProperty("metadata") Map<String, String> metadata
 	) { // @formatter:on
 
 		/**
@@ -1903,7 +1923,9 @@ public class OpenAiApi {
 			@JsonProperty("service_tier") String serviceTier,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
 			@JsonProperty("object") String object,
-			@JsonProperty("usage") Usage usage) { // @formatter:on
+			@JsonProperty("usage") Usage usage,
+			@JsonProperty("metadata") Map<String, String> metadata
+	) { // @formatter:on
 
 		/**
 		 * Chat completion choice.
